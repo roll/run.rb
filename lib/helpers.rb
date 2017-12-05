@@ -48,7 +48,6 @@ def read_config(path='run.yml')
   end
 
   return [config, options]
-
 end
 
 
