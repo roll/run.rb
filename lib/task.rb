@@ -1,352 +1,436 @@
 # Module API
 
-class Task(object):
+class Task
 
-    # Public
+  # Public
 
-    def __init__(self, descriptor, options={}, parent=None, parent_type=None, quiet=False):
-        self._parent = parent
+  def initialize(descriptor, options: {}, parent: nil, parent_type: nil, quiet: false)
+    @parent = parent
 
-        # Prepare
-        desc = '' if parent else 'General run description'
-        name, code = list(descriptor.items())[0]
-        if isinstance(code, dict):
-            desc = code['desc']
-            code = code['code']
+    # Prepare
+    desc = parent ? '' : 'General run description'
+    name, code = descriptor.each_pair[0]
+    if code.kind_of?(Hash)
+      desc = code['desc']
+      code = code['code']
+    end
 
-        # Optional
-        optional = False
-        if name.startswith('/'):
-            name = name[1:]
-            optional = True
+    # Optional
+    optional = false
+    if name.start_with?('/')
+      name = name[1..-1]
+      optional = true
+    end
 
-        # Quiet
-        if name.strip(')').endswith('!'):
-            name = ''.join(name.rsplit('!', 1))
-            quiet = True
+    # Quiet
+    if name.include?('!')
+      name = name.replace('!', '')
+      quiet = true
+    end
 
-        # Directive type
-        type = 'directive'
+    # Directive type
+    type = 'directive'
 
-        # Variable type
-        if name.isupper():
-            type = 'variable'
-            desc = 'Prints the variable'
+    # Variable type
+    if name == name.upcase
+      type = 'variable'
+      desc = 'Prints the variable'
+    end
 
-        # Sequence type
-        childs = []
-        if isinstance(code, list):
-            type = 'sequence'
+    # Sequence type
+    childs = []
+    if code.kind_of?(Array)
+      type = 'sequence'
 
-            # Parent type
-            if parent_type in ['parallel', 'multiplex']:
-                type = parent_type
+      # Parent type
+      if ['parallel', 'multiplex'].include?(parent_type)
+        type = parent_type
+      end
 
-            # Parallel type
-            if name.startswith('(') and name.endswith(')'):
-                if len(self.parents) >= 2:
-                    message = 'Subtask descriptions and execution control not supported'
-                    helpers.print_message('general', message=message)
-                    exit(1)
-                name = name[1:-1]
-                type = 'parallel'
+      # Parallel type
+      if name.start_with?('(') && name.end_with?(')')
+        if self.parents.length >= 2
+          message = 'Subtask descriptions and execution control not supported'
+          print_message('general', {'message' => message})
+          exit(1)
+        end
+        name = name[1..-2]
+        type = 'parallel'
+      end
 
-            # Multiple type
-            if name.startswith('(') and name.endswith(')'):
-                name = name[1:-1]
-                type = 'multiplex'
+      # Multiple type
+      if name.start_with?('(') && name.end_with?(')')
+        name = name[1..-2]
+        type = 'multiplex'
+      end
 
-            # Create childs
-            for descriptor in code:
-                if not isinstance(descriptor, dict):
-                    descriptor = {'': descriptor}
-                child = Task(descriptor,
-                    options=options, parent=self, parent_type=type, quiet=quiet)
-                childs.append(child)
+      # Create childs
+      for descriptor in code
+        if !descriptor.kind_of?(Hash)
+          descriptor = {'' => descriptor}
+        end
+        child = Task.new(descriptor,
+            options:options, parent:self, parent_type:type, quiet:quiet)
+        childs.push(child)
+      end
 
-            # Reset code
-            code = None
+      # Reset code
+      code = nil
 
-        # Set attributes
-        self._name = name
-        self._code = code
-        self._type = type
-        self._desc = desc
-        self._quiet = quiet
-        self._childs = childs
-        self._options = options
-        self._optional = optional
+    end
 
-    def __repr__(self):
-        return self.qualified_name
+    # Set attributes
+    @name = name
+    @code = code
+    @type = type
+    @desc = desc
+    @quiet = quiet
+    @childs = childs
+    @options = options
+    @optional = optional
 
-    @property
-    def name(self):
-        return self._name
+  end
 
-    @property
-    def code(self):
-        return self._code
+  def name()
+    return @name
+  end
 
-    @property
-    def type(self):
-        return self._type
+  def code()
+    return @code
+  end
 
-    @property
-    def desc(self):
-        return self._desc
+  def type()
+    return @type
+  end
 
-    @property
-    def parent(self):
-        return self._parent
+  def desc()
+    return @desc
+  end
 
-    @property
-    def quiet(self):
-        return self._quiet
+  def parent()
+    return @parent
+  end
 
-    @property
-    def childs(self):
-        return self._childs
+  def quiet()
+    return @quiet
+  end
 
-    @property
-    def options(self):
-        return self._options
+  def childs()
+    return @childs
+  end
 
-    @property
-    def optional(self):
-        return self._optional
+  def options()
+    return @options
+  end
 
-    @property
-    def composite(self):
-        return bool(self._childs)
+  def optional()
+    return @optional
+  end
 
-    @property
-    def is_root(self):
-        return bool(not self._parent)
+  def composite()
+    return @childs.length > 0
+  end
 
-    @property
-    def parents(self):
-        parents = []
-        task = self
-        while True:
-            if not task.parent:
-                break
-            parents.append(task.parent)
-            task = task.parent
-        return list(reversed(parents))
+  def is_root()
+    return !!@parent
+  end
 
-    @property
-    def qualified_name(self):
-        names = []
-        for parent in (self.parents + [self]):
-            if parent.name:
-                names.append(parent.name)
-        return ' '.join(names)
+  def parents()
+    parents = []
+    task = self
+    while true
+      if !task.parent
+        break
+      end
+      parents.push(task.parent)
+      task = task.parent
+    end
+    return parents.reverse
+  end
 
-    @property
-    def flatten_setup_tasks(self):
-        tasks = []
-        for parent in self.parents:
-            for task in parent.childs:
-                if task is self:
-                    break
-                if task in self.parents:
-                    break
-                if task.type == 'variable':
-                    tasks.append(task)
-        return tasks
+  def qualified_name()
+    names = []
+    for parent in self.parents + [self]
+      if !parent.name.empty?
+        names.push(parent.name)
+      end
+    end
+    return names.join(' ')
+  end
 
-    @property
-    def flatten_general_tasks(self):
-        tasks = []
-        for task in self.childs or [self]:
-            if task.composite:
-                tasks.extend(task.flatten_general_tasks)
-                continue
-            tasks.append(task)
-        return tasks
+  def flatten_setup_tasks()
+    tasks = []
+    for parent in self.parents
+      for task in parent.childs
+        if task == self
+          break
+        end
+        if self.parents.include?(task)
+          break
+        end
+        if task.type == 'variable'
+          tasks.push(task)
+        end
+      end
+    end
+    return tasks
+  end
 
-    @property
-    def flatten_childs_with_composite(self):
-        tasks = []
-        for task in self.childs:
-            tasks.append(task)
-            if task.composite:
-                tasks.extend(task.flatten_childs_with_composite)
-        return tasks
+  def flatten_general_tasks()
+    tasks = []
+    for task in self.childs or [self]
+      if task.composite
+        tasks = tasks + task.flatten_general_tasks
+        next
+      end
+      tasks.push(task)
+    end
+    return tasks
+  end
 
-    def find_child_tasks_by_name(self, name):
-        tasks = []
-        for task in self.flatten_general_tasks:
-            if task.name == name:
-                tasks.append(task)
-        return tasks
+  def flatten_childs_with_composite()
+    tasks = []
+    for task in self.childs
+      tasks.push(task)
+      if task.composite
+        tasks = tasks + task.flatten_childs_with_composite
+      end
+    end
+    return tasks
+  end
 
-    def find_child_task_by_abbrevation(self, abbrevation):
-        letter = abbrevation[0]
-        abbrev = abbrevation[1:]
-        for task in self.childs:
-            if task.name.startswith(letter):
-                if abbrev:
-                    return task.find_child_task_by_abbrevation(abbrev)
-                return task
-        return None
+  def find_child_tasks_by_name(name)
+    tasks = []
+    for task in self.flatten_general_tasks
+      if task.name == name
+        tasks.push(task)
+      end
+    end
+    return tasks
+  end
 
-    def run(self, argv):
-        commands = []
+  def find_child_task_by_abbrevation(abbrevation)
+    letter = abbrevation[0]
+    abbrev = abbrevation[1..-1]
+    for task in self.childs
+      if task.name.start_with?(letter)
+        if abbrev
+          return task.find_child_task_by_abbrevation(abbrev)
+        end
+        return task
+      end
+    end
+    return nil
+  end
 
-        # Delegate by name
-        if len(argv) > 0:
-            for task in self.childs:
-                if task.name == argv[0]:
-                    return task.run(argv[1:])
+  def run(argv)
+    commands = []
 
-        # Delegate by abbrevation
-        if len(argv) > 0:
-            if self.is_root:
-                task = self.find_child_task_by_abbrevation(argv[0])
-                if task:
-                    return task.run(argv[1:])
+    # Delegate by name
+    if argv.length > 0
+      for task in self.childs
+        if task.name == argv[0]
+          return task.run(argv[1..-1])
+        end
+      end
+    end
 
-        # Root task
-        if self.is_root:
-            if len(argv) > 0 and argv != ['?']:
-                message = 'Task "%s" not found' % argv[0]
-                helpers.print_message('general', message=message)
-                exit(1)
-            _print_help(self, self)
-            return True
+    # Delegate by abbrevation
+    if argv.length > 0
+      if self.is_root
+        task = self.find_child_task_by_abbrevation(argv[0])
+        if task
+          return task.run(argv[1..-1])
+        end
+      end
+    end
 
-        # Prepare filters
-        filters = {'pick': [], 'enable': [], 'disable': []}
-        for name, prefix in [['pick', '='], ['enable', '+'], ['disable', '-']]:
-            for arg in list(argv):
-                if arg.startswith(prefix):
-                    childs = self.find_child_tasks_by_name(arg[1:])
-                    if childs:
-                        filters[name].extend(childs)
-                        argv.remove(arg)
+    # Root task
+    if self.is_root
+      if argv.length > 0 && argv != ['?']
+        message = "Task '#{argv[0]}' not found"
+        helpers.print_message('general', {'message' => message})
+        exit(1)
+      end
+      _print_help(self, self)
+      return true
+    end
 
-        # Detect help
-        help = False
-        if argv == ['?']:
-            argv.pop()
-            help = True
+    # Prepare filters
+    filters = {'pick' => [], 'enable' => [], 'disable' => []}
+    for name, prefix in [['pick', '='], ['enable', '+'], ['disable', '-']]
+      for arg in argv.clone
+        if arg.start_with?(prefix)
+          childs = self.find_child_tasks_by_name(arg[1..-1])
+          if !childs.empty?
+            filters[name] = filters[name] + childs
+            argv.delete(arg)
+          end
+        end
+      end
+    end
 
-        # Collect setup commands
-        for task in self.flatten_setup_tasks:
-            command = Command(task.qualified_name, task.code, variable=task.name)
-            commands.append(command)
+    # Detect help
+    help = false
+    if argv == ['?']
+      argv.pop()
+      help = true
+    end
 
-        # Collect general commands
-        for task in self.flatten_general_tasks:
-            if task is not self and task not in filters['pick']:
-                if task.optional and task not in filters['enable']:
-                    continue
-                if task in filters['disable']:
-                    continue
-                if filters['pick']:
-                    continue
-            variable = task.name if task.type == 'variable' else None
-            command = Command(task.qualified_name, task.code, variable=variable)
-            commands.append(command)
+    # Collect setup commands
+    for task in self.flatten_setup_tasks
+      command = Command.new(task.qualified_name, task.code, variable: task.name)
+      commands.push(command)
+    end
 
-        # Normalize arguments
-        arguments_index = None
-        for index, command in enumerate(commands):
-            if '$RUNARGS' in command.code:
-                if not command.variable:
-                    arguments_index = index
-                    continue
-            if arguments_index is not None:
-                command.code = command.code.replace('$RUNARGS', '')
+    # Collect general commands
+    for task in self.flatten_general_tasks
+      if task != self && !filters['pick'].include?(task)
+        if task.optional && !filters['enable'].include?(task)
+          next
+        end
+        if filters['disable'].include?(task)
+          next
+        end
+        if filters['pick']
+          next
+        end
+      end
+      variable = task.type == 'variable' ? task.name : nil
+      command = Command.new(task.qualified_name, task.code, variable: variable)
+      commands.push(command)
+    end
 
-        # Provide arguments
-        if arguments_index is None:
-            for index, command in enumerate(commands):
-                if not command.variable:
-                    command.code = '%s $RUNARGS' % command.code
-                    break
+    # Normalize arguments
+    arguments_index = nil
+    for index, command in enumerate(commands)
+      if command.code.include?('$RUNARGS')
+        if !command.variable
+          arguments_index = index
+          next
+        end
+      end
+      if arguments_index != nil
+        command.code = command.code.replace('$RUNARGS', '')
+      end
+    end
 
-        # Create plan
-        plan = Plan(commands, self.type)
+    # Provide arguments
+    if arguments_index == nil
+      for index, command in commands.each_pair
+        if !command.variable
+          command.code = "#{command.code} $RUNARGS"
+          break
+        end
+      end
+    end
 
-        # Show help
-        if help:
-            task = self if len(self.parents) < 2 else self.parents[1]
-            _print_help(task, self, plan, filters)
-            exit()
+    # Create plan
+    plan = Plan.new(commands, self.type)
 
-        # Execute commands
-        plan.execute(argv,
-            quiet=self.quiet,
-            faketty=self.options.get('faketty'))
+    # Show help
+    if help
+      task = self.parents.length < 2 ? self : self.parents[1]
+      _print_help(task, self, plan, filters)
+      exit()
+    end
 
-        return True
+    # Execute commands
+    plan.execute(argv,
+      quiet: self.quiet,
+      faketty: self.options.fetch('faketty', False))
 
-    def complete(self, argv):
+    return true
+  end
 
-        # Delegate by name
-        if len(argv) > 0:
-            for task in self.childs:
-                if task.name == argv[0]:
-                    return task.complete(argv[1:])
+  def complete(argv)
 
-        # Autocomplete
-        for child in self.childs:
-            if child.name:
-                print(child.name)
+    # Delegate by name
+    if argv.length > 0
+      for task in self.childs
+        if task.name == argv[0]
+          return task.complete(argv[1..-1])
+        end
+      end
+    end
 
-        return True
+    # Autocomplete
+    for child in self.childs
+      if child.name
+        print(child.name)
+      end
+    end
+
+    return true
+  end
+
+end
 
 
 # Internal
 
-def _print_help(task, selected_task, plan=None, filters=None):
+def _print_help(task, selected_task, plan: nil, filters: nil)
 
-    # General
-    helpers.print_message('general', message=task.qualified_name)
-    helpers.print_message('general', message='\n---')
-    if task.desc:
-        helpers.print_message('general', message='\nDescription\n')
-        print(task.desc)
+  # General
+  helpers.print_message('general', {'message' => task.qualified_name})
+  helpers.print_message('general', {'message' =>  '\n---'})
+  if !task.desc.empty?
+    helpers.print_message('general', {'message' => '\nDescription\n'})
+    puts(task.desc)
+  end
 
-    # Vars
-    header = False
-    for child in [task] + task.flatten_childs_with_composite:
-        if child.type == 'variable':
-            if not header:
-                helpers.print_message('general', message='\nVars\n')
-                header = True
-            print(child.qualified_name)
+  # Vars
+  header = false
+  for child in [task] + task.flatten_childs_with_composite
+    if child.type == 'variable'
+      if !header
+        helpers.print_message('general', {'message' => '\nVars\n'})
+        header = true
+      end
+      print(child.qualified_name)
+    end
+  end
 
-    # Tasks
-    header = False
-    for child in [task] + task.flatten_childs_with_composite:
-        if not child.name:
-            continue
-        if child.type == 'variable':
-            continue
-        if not header:
-            helpers.print_message('general', message='\nTasks\n')
-            header = True
-        message = child.qualified_name
-        if child.optional:
-            message += ' (optional)'
-        if filters:
-            if child in filters['pick']:
-                message += ' (picked)'
-            if child in filters['enable']:
-                message += ' (enabled)'
-            if child in filters['disable']:
-                message += ' (disabled)'
-        if child is selected_task:
-            message += ' (selected)'
-            helpers.print_message('general', message=message)
-        else:
-            print(message)
+  # Tasks
+  header = false
+  for child in [task] + task.flatten_childs_with_composite
+    if child.name.empty?
+      next
+    end
+    if child.type == 'variable'
+      next
+    end
+    if !header
+      helpers.print_message('general', {'message' => '\nTasks\n'})
+      header = true
+    end
+    message = child.qualified_name
+    if child.optional
+      message += ' (optional)'
+    end
+    if filters
+      if filters['pick'].include?(child)
+        message += ' (picked)'
+      end
+      if filters['enable'].include?(child)
+        message += ' (enabled)'
+      end
+      if filters['disable'].include?(child)
+        message += ' (disabled)'
+      end
+    end
+    if child == selected_task
+      message += ' (selected)'
+      helpers.print_message('general', {'message' => message})
+    else
+      puts(message)
+    end
+  end
 
-    # Execution plan
-    if plan:
-        helpers.print_message('general', message='\nExecution Plan\n')
-        print(plan.explain())
+  # Execution plan
+  if plan
+    helpers.print_message('general', {'message' => '\nExecution Plan\n'})
+    puts(plan.explain())
+  end
+
+end
