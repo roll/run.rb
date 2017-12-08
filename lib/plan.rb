@@ -21,7 +21,7 @@ class Plan
       if ['sequence', 'parallel', 'multiplex'].include?(@mode)
         if !command.variable
           if plain
-            lines.push("[#{mode.upcase()}]")
+            lines.push("[#{@mode.upcase()}]")
           end
           plain = false
         end
@@ -33,7 +33,7 @@ class Plan
       lines.push("#{' ' * (plain ? 0 : 4)}$ #{code}")
     end
 
-    return '\n'.join(lines)
+    return lines.join("\n")
 
   end
 

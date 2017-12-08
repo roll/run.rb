@@ -1,4 +1,5 @@
 require_relative 'plan'
+require_relative 'command'
 
 
 # Module API
@@ -181,7 +182,7 @@ class Task
 
   def flatten_general_tasks()
     tasks = []
-    for task in self.childs or [self]
+    for task in self.composite ? self.childs : [self]
       if task.composite
         tasks = tasks + task.flatten_general_tasks
         next
@@ -295,7 +296,7 @@ class Task
         if filters['disable'].include?(task)
           next
         end
-        if filters['pick']
+        if !filters['pick'].empty?
           next
         end
       end
@@ -334,7 +335,7 @@ class Task
     # Show help
     if help
       task = self.parents.length < 2 ? self : self.parents[1]
-      _print_help(task, self, plan, filters)
+      _print_help(task, self, plan: plan, filters: filters)
       exit()
     end
 
@@ -432,7 +433,7 @@ def _print_help(task, selected_task, plan: nil, filters: nil)
 
   # Execution plan
   if plan
-    print_message('general', {'message' => '\nExecution Plan\n'})
+    print_message('general', {'message' => "\nExecution Plan\n"})
     puts(plan.explain())
   end
 

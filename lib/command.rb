@@ -18,8 +18,8 @@ class Command
     return @code
   end
 
-  def code(value)
-    if value
+  def code(value=nil)
+    if value != nil
       @code = value
     end
     return @code
