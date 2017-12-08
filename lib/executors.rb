@@ -1,95 +1,39 @@
-import sys
-import click
-import select
-import subprocess
-from . import helpers
-from .faketty import apply_faketty
+require 'open3'
 
 
 # Module API
 
-def execute_sync(commands, environ, quiet=False):
-    for command in commands:
+def execute_sync(commands, environ:{}, quiet:false)
+  for command in commands
 
-        # Log process
-        if not command.variable and not quiet:
-            sys.stdout.write('[run] Launched "%s"\n' % command.code)
-            sys.stdout.flush()
+      # Log process
+      if !command.variable && !quiet
+        puts("[run] Launched '#{command.code}'\n")
+      end
 
-        # Create process
-        stdout = None if not command.variable else subprocess.PIPE
-        stderr = None if not command.variable else subprocess.STDOUT
-        process = subprocess.Popen(command.code,
-            shell=True, env=environ, stdout=stdout, stderr=stderr)
+      # Execute process
+      if !command.variable
+        status = system(command.code)
+      else
+        output, status = Open3.capture2e(command.code)
+        environ[command.variable] = output
+      end
 
-        # Wait process
-        output, _ = process.communicate()
-        if process.returncode != 0:
-            message = '[run] Command "%s" has failed' % command.code
-            helpers.print_message('general', message=message)
-            exit(1)
-        if command.variable:
-            environ[command.variable] = output.decode().strip()
+      # Failed process
+      if status != 0
+        message = "[run] Command '#{command.code}' has failed"
+        print_message('general', message: message)
+        exit(1)
+      end
+
+  end
+end
 
 
-def execute_async(commands, environ, multiplex=False, quiet=False, faketty=False):
-
-    # Launch processes
-    processes = []
-    color_iterator = helpers.iter_colors()
-    for command in commands:
-
-        # Log process
-        if not quiet:
-            sys.stdout.write('[run] Launched "%s"\n' % command.code)
-            sys.stdout.flush()
-
-        # Create process
-        process = subprocess.Popen(
-            apply_faketty(command.code, faketty=faketty), bufsize=64, env=environ,
-            shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-        # Create listener
-        listener = select.poll()
-        listener.register(process.stdout, select.POLLIN)
-
-        # Register process
-        color = next(color_iterator)
-        processes.append((command, process, listener, color))
-
-    # Wait processes
-    while processes:
-        for index, (command, process, listener, color) in enumerate(processes):
-
-            # Process output
-            if multiplex or index == 0:
-                while listener.poll(1000):
-                    line = process.stdout.readline()
-                    if not line:
-                        break
-                    _print_line(line, command.name, color,
-                        multiplex=multiplex, quiet=quiet)
-
-            # Process finish
-            if process.poll() is not None:
-                if process.returncode != 0:
-                    for line in process.stdout.readlines():
-                        _print_line(line, command.name, color,
-                            multiplex=multiplex, quiet=quiet)
-                    message = '[run] Command "%s" has failed' % command.code
-                    helpers.print_message('general', message=message)
-                    exit(1)
-                if index == 0:
-                    processes.pop(index)
-                    break
-
+def execute_async(commands)
+end
 
 # Internal
 
-def _print_line(line, name, color, multiplex=False, quiet=False):
-    line = line.replace(b'\r\n', b'\n')
-    if multiplex and not quiet:
-        click.echo(click.style('%s | ' % name, fg=color), nl=False)
-    buffer = getattr(sys.stdout, 'buffer', sys.stdout)
-    buffer.write(line)
-    sys.stdout.flush()
+def print_line(line)
+end

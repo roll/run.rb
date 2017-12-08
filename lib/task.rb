@@ -1,3 +1,6 @@
+require_relative 'plan'
+
+
 # Module API
 
 class Task
@@ -9,7 +12,7 @@ class Task
 
     # Prepare
     desc = parent ? '' : 'General run description'
-    name, code = descriptor.each_pair[0]
+    name, code = Array(descriptor.each_pair)[0]
     if code.kind_of?(Hash)
       desc = code['desc']
       code = code['code']
@@ -24,7 +27,7 @@ class Task
 
     # Quiet
     if name.include?('!')
-      name = name.replace('!', '')
+      name = name.gsub('!', '')
       quiet = true
     end
 
@@ -32,7 +35,7 @@ class Task
     type = 'directive'
 
     # Variable type
-    if name == name.upcase
+    if !name.empty? && name == name.upcase
       type = 'variable'
       desc = 'Prints the variable'
     end
@@ -132,7 +135,7 @@ class Task
   end
 
   def is_root()
-    return !!@parent
+    return !@parent
   end
 
   def parents()
@@ -249,7 +252,7 @@ class Task
     if self.is_root
       if argv.length > 0 && argv != ['?']
         message = "Task '#{argv[0]}' not found"
-        helpers.print_message('general', {'message' => message})
+        print_message('general', {'message' => message})
         exit(1)
       end
       _print_help(self, self)
@@ -303,7 +306,7 @@ class Task
 
     # Normalize arguments
     arguments_index = nil
-    for index, command in enumerate(commands)
+    for command, index in commands.each_with_index
       if command.code.include?('$RUNARGS')
         if !command.variable
           arguments_index = index
@@ -317,7 +320,7 @@ class Task
 
     # Provide arguments
     if arguments_index == nil
-      for index, command in commands.each_pair
+      for command, index in commands.each_with_index
         if !command.variable
           command.code = "#{command.code} $RUNARGS"
           break
@@ -338,7 +341,7 @@ class Task
     # Execute commands
     plan.execute(argv,
       quiet: self.quiet,
-      faketty: self.options.fetch('faketty', False))
+      faketty: self.options.fetch('faketty', false))
 
     return true
   end
@@ -372,10 +375,10 @@ end
 def _print_help(task, selected_task, plan: nil, filters: nil)
 
   # General
-  helpers.print_message('general', {'message' => task.qualified_name})
-  helpers.print_message('general', {'message' =>  '\n---'})
+  print_message('general', {'message' => task.qualified_name})
+  print_message('general', {'message' =>  "\n---"})
   if !task.desc.empty?
-    helpers.print_message('general', {'message' => '\nDescription\n'})
+    print_message('general', {'message' => "\nDescription\n"})
     puts(task.desc)
   end
 
@@ -384,10 +387,10 @@ def _print_help(task, selected_task, plan: nil, filters: nil)
   for child in [task] + task.flatten_childs_with_composite
     if child.type == 'variable'
       if !header
-        helpers.print_message('general', {'message' => '\nVars\n'})
+        print_message('general', {'message' => "\nVars\n"})
         header = true
       end
-      print(child.qualified_name)
+      puts(child.qualified_name)
     end
   end
 
@@ -401,7 +404,7 @@ def _print_help(task, selected_task, plan: nil, filters: nil)
       next
     end
     if !header
-      helpers.print_message('general', {'message' => '\nTasks\n'})
+      print_message('general', {'message' => "\nTasks\n"})
       header = true
     end
     message = child.qualified_name
@@ -421,7 +424,7 @@ def _print_help(task, selected_task, plan: nil, filters: nil)
     end
     if child == selected_task
       message += ' (selected)'
-      helpers.print_message('general', {'message' => message})
+      print_message('general', {'message' => message})
     else
       puts(message)
     end
@@ -429,7 +432,7 @@ def _print_help(task, selected_task, plan: nil, filters: nil)
 
   # Execution plan
   if plan
-    helpers.print_message('general', {'message' => '\nExecution Plan\n'})
+    print_message('general', {'message' => '\nExecution Plan\n'})
     puts(plan.explain())
   end
 

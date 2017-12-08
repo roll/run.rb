@@ -1,3 +1,7 @@
+require 'yaml'
+require 'colorize'
+
+
 # Module API
 
 def read_config(path='run.yml')
@@ -20,18 +24,18 @@ def read_config(path='run.yml')
   comments = []
   config = {'run' => []}
   raw_config = documents[0]
-  for line in contents.split('\n')
+  for line in contents.split("\n")
 
     # Comment begin
-    if line.start_with('# ')
-      comments.push(line.replace('# ', ''))
+    if line.start_with?('# ')
+      comments.push(line.gsub('# ', ''))
       next
     end
 
     # Add config item
     for key, value in raw_config.each_pair
-      if line.start_with(key)
-        config['run'].push({key => {'code' => value, 'desc' => comments.join('\n')}})
+      if line.start_with?(key)
+        config['run'].push({key => {'code' => value, 'desc' => comments.join("\n")}})
       end
     end
 
