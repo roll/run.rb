@@ -361,7 +361,7 @@ class Task
     # Autocomplete
     for child in self.childs
       if child.name
-        print(child.name)
+        puts(child.name)
       end
     end
 
