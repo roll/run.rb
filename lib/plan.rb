@@ -51,7 +51,7 @@ class Plan
       end
     end
     execute_sync(variables, environ: ENV, quiet:quiet)
-    if !(commands.length)
+    if commands.empty?
       puts(ENV[varnames[-1]])
       return
     end
