@@ -17,7 +17,7 @@ def execute_sync(commands, environ:{}, quiet:false)
         status = system(command.code)
       else
         output, status = Open3.capture2e(command.code)
-        environ[command.variable] = output
+        environ[command.variable] = output.strip()
       end
 
       # Failed process

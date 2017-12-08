@@ -69,7 +69,7 @@ class Plan
       items = []
       start = Time.now
       for name in varnames + ['RUNARGS']
-        items.push("#{name}=#{ENV[name].strip}")
+        items.push("#{name}=#{ENV[name]}")
       end
       puts("[run] Prepared '#{items.join('; ')}'")
     end
