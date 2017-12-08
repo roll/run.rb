@@ -1,4 +1,5 @@
 require 'open3'
+require_relative 'helpers'
 
 
 # Module API
@@ -20,9 +21,9 @@ def execute_sync(commands, environ:{}, quiet:false)
       end
 
       # Failed process
-      if status != 0
+      if !status
         message = "[run] Command '#{command.code}' has failed"
-        print_message('general', message: message)
+        print_message('general', {'message' => message})
         exit(1)
       end
 

@@ -323,7 +323,7 @@ class Task
     if arguments_index == nil
       for command, index in commands.each_with_index
         if !command.variable
-          command.code = "#{command.code} $RUNARGS"
+          command.code("#{command.code} $RUNARGS")
           break
         end
       end

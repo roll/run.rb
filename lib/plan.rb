@@ -69,7 +69,7 @@ class Plan
       items = []
       start = Time.now
       for name in varnames + ['RUNARGS']
-        items.push("#{name}=#{ENV[name]}")
+        items.push("#{name}=#{ENV[name].strip}")
       end
       puts("[run] Prepared '#{items.join('; ')}'")
     end
@@ -95,7 +95,7 @@ class Plan
     # Log finished
     if !quiet
       stop = Time.now
-      time = stop - start
+      time = (stop - start).round(3)
       puts("[run] Finished in #{time} seconds")
     end
 
