@@ -218,7 +218,7 @@ class Task
     abbrev = abbrevation[1..-1]
     for task in self.childs
       if task.name.start_with?(letter)
-        if abbrev
+        if !abbrev.empty?
           return task.find_child_task_by_abbrevation(abbrev)
         end
         return task
