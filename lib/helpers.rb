@@ -61,23 +61,19 @@ end
 
 
 def iter_colors()
-  _COLORS.cycle {|color| yield color}
+  colors = [
+      'cyan',
+      'yellow',
+      'green',
+      'magenta',
+      'red',
+      'blue',
+      'intense_cyan',
+      'intense_yellow',
+      'intense_green',
+      'intense_magenta',
+      'intense_red',
+      'intense_blue',
+  ]
+  return colors.cycle
 end
-
-
-# Internal
-
-_COLORS = [
-    'cyan',
-    'yellow',
-    'green',
-    'magenta',
-    'red',
-    'blue',
-    'intense_cyan',
-    'intense_yellow',
-    'intense_green',
-    'intense_magenta',
-    'intense_red',
-    'intense_blue',
-]
